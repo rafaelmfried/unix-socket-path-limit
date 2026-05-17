@@ -1,32 +1,34 @@
-BINARY := bin/unix-socket-path-limit
+# unix-socket-path-limit — Makefile
+#
+# Reader validation flow:
+#   make test              fast unit tests, no Docker
+#   make test-integration  qemu in a real container (needs Docker)
+#   make verify            both, in order — the full proof
+
+GO                  ?= go
+INTEGRATION_TIMEOUT ?= 15m
 
 .DEFAULT_GOAL := help
-.PHONY: help demo build clean
+.PHONY: help test test-integration verify vet tidy check-docker
 
-help:
-	@echo "Usage:"
-	@echo "  make demo    - Run the demo program"
-	@echo "  make test    - Run tests"
-	@echo "  make build   - Build the binary executable"
-	@echo "  make clean   - Remove the built binary"
-	@echo "  make help    - Show this help message"
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
+		awk 'BEGIN{FS=":.*?## "}{printf "  %-18s %s\n", $$1, $$2}'
 
-demo:
-	@echo "Running demo..."
-	@go run .
-	@echo "Demo completed."
+test: ## Run the fast table-driven unit tests (no Docker)
+	@$(GO) test -v ./runtimedir/...
 
-test:
-	@echo "Running tests..."
-	@go test -v ./...
-	@echo "Tests completed."
+test-integration: check-docker ## Run the qemu-in-Testcontainers tests (needs Docker)
+	@$(GO) test -v -count=1 -timeout $(INTEGRATION_TIMEOUT) -tags integration ./integration/...
 
-build:
-	@echo "Building binary..."
-	@go build -o $(BINARY) .
-	@echo "Binary built at $(BINARY)"
+verify: test test-integration ## Full validation: unit tests, then integration
 
-clean:
-	@echo "Cleaning up..."
-	@rm -f $(BINARY)
-	@echo "Clean completed."
+vet: ## go vet across all packages, including the integration build tag
+	@$(GO) vet -tags integration ./...
+
+tidy: ## Sync go.mod / go.sum
+	@$(GO) mod tidy
+
+check-docker: ## Fail early with a clear message if Docker is unreachable
+	@docker info >/dev/null 2>&1 || { \
+		echo "Docker is not running — start it and retry."; exit 1; }
