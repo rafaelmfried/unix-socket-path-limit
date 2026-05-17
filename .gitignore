@@ -1,1 +1,3 @@
-bin
+# Ignore all files in the bin directory
+bin/*
+!bin/.gitkeep
