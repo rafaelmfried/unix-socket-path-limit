@@ -1,0 +1,8 @@
+FROM debian:trixie-slim
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends qemu-system-x86 coreutils \
+ && rm -rf /var/lib/apt/lists/*
+
+# Keep the container alive so the test can Exec qemu commands into it.
+CMD ["sleep", "infinity"]
