@@ -1,7 +1,7 @@
 BINARY := bin/unix-socket-path-limit
 
 .DEFAULT_GOAL := help
-.PHONY: help demo build
+.PHONY: help demo build clean
 
 help:
 	@echo "Usage:"
@@ -18,3 +18,8 @@ build:
 	@echo "Building binary..."
 	@go build -o $(BINARY) .
 	@echo "Binary built at $(BINARY)"
+
+clean:
+	@echo "Cleaning up..."
+	@rm -f $(BINARY)
+	@echo "Clean completed."
